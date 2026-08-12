@@ -41,6 +41,7 @@ archives:
       - README.zh-CN.md
       - CHANGELOG.md
       - docs/*.md
+      - skills/install-distship/**
 
 checksum:
   name_template: checksums.txt

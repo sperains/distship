@@ -31,6 +31,10 @@ distship version
 
 Use a user-owned directory on `PATH` instead of `/usr/local/bin` when administrator access is unavailable. Homebrew distribution is planned but is not enabled yet.
 
+### Codex skill
+
+The repository includes an [`install-distship`](skills/install-distship/SKILL.md) skill for installing or upgrading a checksum-verified release. Ask Codex to install the skill from `https://github.com/sperains/distship/tree/main/skills/install-distship`, then use `$install-distship` for the latest stable release or a specific version. It defaults to `$HOME/.local/bin` and does not modify DistShip configuration or deployment history.
+
 ### Upgrade
 
 Download and verify the newer archive, then replace the existing `distship` binary in the same location. Configuration and local deployment history are kept separately and are not replaced by a binary upgrade. Run `distship version` after replacement to confirm the active version.

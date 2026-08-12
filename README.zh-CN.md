@@ -31,6 +31,10 @@ distship version
 
 没有管理员权限时，应改用已经加入 `PATH` 的用户目录。Homebrew 分发仍在计划中，当前尚未启用。
 
+### Codex 技能
+
+仓库提供配套的 [`install-distship`](skills/install-distship/SKILL.md) 技能，用于安装或升级经过校验的正式版本。可以让 Codex 从 `https://github.com/sperains/distship/tree/main/skills/install-distship` 安装该技能，再使用 `$install-distship` 安装最新稳定版或指定版本。默认安装到 `$HOME/.local/bin`，不会修改 DistShip 配置或部署历史。
+
 ### 升级
 
 下载并校验新版本压缩包，然后替换原安装位置中的 `distship` 二进制。配置和本机部署历史保存在独立目录中，不会被二进制升级覆盖。替换完成后执行 `distship version`，确认当前生效版本。

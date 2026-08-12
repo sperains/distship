@@ -1,0 +1,4 @@
+interface:
+  display_name: "Install DistShip"
+  short_description: "Install or upgrade DistShip from verified releases"
+  default_prompt: "Use $install-distship to install the latest DistShip release on this machine."

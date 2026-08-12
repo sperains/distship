@@ -7,6 +7,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 ## Unreleased
 
 - Updated GitHub Actions dependencies to current releases and pinned their immutable commits.
+- Added a companion Codex skill for verified DistShip installation and upgrades.
 
 ## [0.1.0] - 2026-08-12
 
