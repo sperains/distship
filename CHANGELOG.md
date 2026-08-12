@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## Unreleased
 
+- Updated GitHub Actions dependencies to current releases and pinned their immutable commits.
+
 ## [0.1.0] - 2026-08-12
 
 - Added reproducible GoReleaser builds for macOS and Linux on ARM64 and x86-64.
