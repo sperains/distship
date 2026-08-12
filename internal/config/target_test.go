@@ -34,7 +34,7 @@ func TestFindTargetByDirectory(t *testing.T) {
 }
 
 func TestIsValidSSHTarget(t *testing.T) {
-	for _, valid := range []string{"bt_250", "example.com", "119.36.78.123", "root@example.com", "root@[::1]"} {
+	for _, valid := range []string{"staging-web", "example.com", "192.0.2.10", "root@example.com", "root@[::1]"} {
 		if !IsValidSSHTarget(valid) {
 			t.Errorf("IsValidSSHTarget(%q) = false", valid)
 		}

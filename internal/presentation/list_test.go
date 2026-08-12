@@ -18,7 +18,7 @@ func TestRenderProjectsUsesGroupedCards(t *testing.T) {
 					"test": {
 						Name:      "测试环境",
 						Directory: "/Users/example/ipd",
-						Target:    config.Target{Host: "bt_250", Directory: "/www/wwwgit/ipd-front"},
+						Target:    config.Target{Host: "staging-web", Directory: "/var/www/ipd"},
 						Git:       config.GitPolicy{AllowedBranches: []string{"test"}},
 					},
 				},
@@ -27,7 +27,7 @@ func TestRenderProjectsUsesGroupedCards(t *testing.T) {
 	}
 
 	output := RenderProjects(cfg, false, i18n.New(i18n.SimplifiedChinese))
-	for _, expected := range []string{"[1] IPD · 测试环境", "标识：ipd:test", "本地：/Users/example/ipd", "远端：bt_250:/www/wwwgit/ipd-front", "分支：test"} {
+	for _, expected := range []string{"[1] IPD · 测试环境", "标识：ipd:test", "本地：/Users/example/ipd", "远端：staging-web:/var/www/ipd", "分支：test"} {
 		if !strings.Contains(output, expected) {
 			t.Errorf("RenderProjects() missing %q:\n%s", expected, output)
 		}

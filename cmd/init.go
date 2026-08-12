@@ -131,7 +131,8 @@ func (a *app) runInit(directoryArgument string, advanced bool) error {
 	if targetExists {
 		resultMessage = i18n.ConfigUpdated
 	}
-	fmt.Fprintf(a.out, "\n✓ %s\n✓ %s\n\n  %s\n  %s\n\n%s\n", a.translator.T(resultMessage), a.translator.T(i18n.ConfigValid), a.translator.T(i18n.FieldLine, a.translator.T(i18n.FieldPath), path), a.translator.T(i18n.FieldLine, a.translator.T(i18n.FieldIdentifier), config.TargetID(answers.projectID, answers.environmentID)), a.translator.T(i18n.NextStep))
+	targetID := config.TargetID(answers.projectID, answers.environmentID)
+	fmt.Fprintf(a.out, "\n✓ %s\n✓ %s\n\n  %s\n  %s\n\n%s\n", a.translator.T(resultMessage), a.translator.T(i18n.ConfigValid), a.translator.T(i18n.FieldLine, a.translator.T(i18n.FieldPath), path), a.translator.T(i18n.FieldLine, a.translator.T(i18n.FieldTargetID), targetID), a.translator.T(i18n.NextStep, targetID))
 	return nil
 }
 
@@ -262,14 +263,16 @@ func askQuickInitQuestions(reader *bufio.Reader, out io.Writer, translator i18n.
 	printProjectDetection(out, directory, defaults, translator)
 	var err error
 	projectDefault, environmentDefault := initTargetDefaults(cfg, directory, defaults)
-	answers.projectID, err = prompt(reader, out, translator.T(i18n.PromptProjectID), projectDefault)
+	answers.projectID = projectDefault
+	fmt.Fprintf(out, "%s\n\n  %s\n", translator.T(i18n.TargetSetupTitle), translator.T(i18n.FieldLine, translator.T(i18n.FieldProject), answers.projectID))
+	answers.environmentID, err = prompt(reader, out, "  "+translator.T(i18n.PromptEnvironment), environmentDefault)
 	if err != nil {
 		return answers, err
 	}
-	answers.environmentID, err = prompt(reader, out, translator.T(i18n.PromptEnvironmentID), environmentDefault)
-	if err != nil {
-		return answers, err
+	if _, valid := config.ParseTargetID(config.TargetID(answers.projectID, answers.environmentID)); !valid {
+		return answers, i18n.NewError(i18n.InvalidEnvironmentID)
 	}
+	printTargetID(out, answers.projectID, answers.environmentID, translator)
 	if answers.environmentID != "test" {
 		defaults = projectinfo.Discover(answers.directory, answers.environmentID)
 	}
@@ -341,9 +344,19 @@ func askAdvancedInitQuestions(reader *bufio.Reader, out io.Writer, translator i1
 	printProjectDetection(out, directory, defaults, translator)
 	var err error
 	projectDefault, environmentDefault := initTargetDefaults(cfg, directory, defaults)
-	if answers.projectID, err = prompt(reader, out, translator.T(i18n.PromptProjectID), projectDefault); err != nil {
+	defaultTargetID := config.TargetID(projectDefault, environmentDefault)
+	fmt.Fprintf(out, "%s\n\n", translator.T(i18n.TargetSetupTitle))
+	targetID, err := prompt(reader, out, "  "+translator.T(i18n.PromptTargetID), defaultTargetID)
+	if err != nil {
 		return answers, err
 	}
+	ref, valid := config.ParseTargetID(targetID)
+	if !valid {
+		return answers, i18n.NewError(i18n.InvalidTargetID)
+	}
+	answers.projectID = ref.ProjectID
+	answers.environmentID = ref.EnvironmentID
+	fmt.Fprintf(out, "  %s\n\n", translator.T(i18n.TargetIDUsage))
 	projectNameDefault := defaults.ProjectName
 	if projectNameDefault == "" || answers.projectID != defaults.ProjectID {
 		projectNameDefault = answers.projectID
@@ -352,9 +365,6 @@ func askAdvancedInitQuestions(reader *bufio.Reader, out io.Writer, translator i1
 		projectNameDefault = project.Name
 	}
 	if answers.projectName, err = prompt(reader, out, translator.T(i18n.PromptProjectName), projectNameDefault); err != nil {
-		return answers, err
-	}
-	if answers.environmentID, err = prompt(reader, out, translator.T(i18n.PromptEnvironmentID), environmentDefault); err != nil {
 		return answers, err
 	}
 	if answers.environmentID != "test" {
@@ -456,14 +466,20 @@ func initTargetDefaults(cfg *config.Config, directory string, defaults projectin
 	return projectID, environmentID
 }
 
+func printTargetID(out io.Writer, projectID, environmentID string, translator i18n.Translator) {
+	targetID := config.TargetID(projectID, environmentID)
+	fmt.Fprintf(out, "\n  %s\n  %s\n\n", translator.T(i18n.FieldLine, translator.T(i18n.FieldTargetID), targetID), translator.T(i18n.TargetIDUsage))
+}
+
 func printInitPreview(out io.Writer, path string, a initAnswers, translator i18n.Translator) {
 	branches := translator.T(i18n.AnyBranchWarning)
 	if len(a.allowedBranches) > 0 {
 		branches = strings.Join(a.allowedBranches, ", ")
 	}
 	lines := []string{
-		translator.T(i18n.FieldLine, translator.T(i18n.FieldProject), a.projectID+" · "+a.projectName),
-		translator.T(i18n.FieldLine, translator.T(i18n.FieldEnvironment), a.environmentID+" · "+a.environmentName),
+		translator.T(i18n.FieldLine, translator.T(i18n.FieldTargetID), config.TargetID(a.projectID, a.environmentID)),
+		translator.T(i18n.FieldLine, translator.T(i18n.FieldProject), a.projectName),
+		translator.T(i18n.FieldLine, translator.T(i18n.FieldEnvironment), a.environmentName),
 		translator.T(i18n.FieldLine, translator.T(i18n.FieldLocalDirectory), a.directory),
 		translator.T(i18n.FieldLine, translator.T(i18n.FieldBuildCommand), strings.Join(a.build, " ")),
 		translator.T(i18n.FieldLine, translator.T(i18n.FieldArtifact), a.artifact),

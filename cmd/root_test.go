@@ -13,13 +13,15 @@ import (
 func TestInitValidateAndList(t *testing.T) {
 	t.Setenv("DISTSHIP_LANG", "zh-CN")
 	directory := t.TempDir()
+	if err := os.WriteFile(filepath.Join(directory, "package.json"), []byte(`{"name":"ipd","scripts":{}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	path := filepath.Join(t.TempDir(), "distship", "projects.toml")
 	input := strings.Join([]string{
-		"ipd",
 		"",
 		`pnpm "build test"`,
 		"dist",
-		"bt_250:/www/wwwgit/ipd-front",
+		"staging-web:/var/www/ipd",
 		"y",
 	}, "\n") + "\n"
 
@@ -60,7 +62,7 @@ func TestInitValidateAndList(t *testing.T) {
 	if err := listCommand.Execute(); err != nil {
 		t.Fatalf("list error = %v", err)
 	}
-	for _, expected := range []string{"[1] ipd · test", "ipd:test", "bt_250:/www/wwwgit/ipd-front"} {
+	for _, expected := range []string{"[1] ipd · test", "ipd:test", "staging-web:/var/www/ipd"} {
 		if !strings.Contains(listOutput.String(), expected) {
 			t.Errorf("list output missing %q:\n%s", expected, listOutput.String())
 		}
@@ -72,14 +74,13 @@ func TestAdvancedInitializationKeepsCustomNames(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(t.TempDir(), "projects.toml")
 	input := strings.Join([]string{
-		"ipd",
+		"ipd:test",
 		"IPD Website",
-		"test",
 		"Test Environment",
 		"pnpm build-test",
 		"dist",
-		"bt_250",
-		"/www/wwwgit/ipd-front",
+		"staging-web",
+		"/var/www/ipd",
 		"test",
 		"warn",
 		"y",
@@ -117,7 +118,7 @@ func TestQuickInitializationPreservesExistingDisplayNames(t *testing.T) {
 	if err := config.Save(path, cfg); err != nil {
 		t.Fatal(err)
 	}
-	input := strings.Join([]string{"", "", "", "bt_250", "/www/wwwgit/ipd-front", "y"}, "\n") + "\n"
+	input := strings.Join([]string{"", "", "staging-web", "/var/www/ipd", "y"}, "\n") + "\n"
 	var output bytes.Buffer
 	command := newRootCommand(strings.NewReader(input), &output, &output)
 	command.SetArgs([]string{"--config", path, "init", directory})
@@ -135,7 +136,7 @@ func TestQuickInitializationPreservesExistingDisplayNames(t *testing.T) {
 	if strings.Count(output.String(), "更新这个部署目标？") != 1 || strings.Contains(output.String(), "已存在，覆盖") {
 		t.Fatalf("expected a single confirmation prompt:\n%s", output.String())
 	}
-	if !strings.Contains(output.String(), "配置变更") || !strings.Contains(output.String(), "当前：old:/var/www/old") || !strings.Contains(output.String(), "新值：bt_250:/www/wwwgit/ipd-front") {
+	if !strings.Contains(output.String(), "配置变更") || !strings.Contains(output.String(), "当前：old:/var/www/old") || !strings.Contains(output.String(), "新值：staging-web:/var/www/ipd") {
 		t.Fatalf("missing update diff:\n%s", output.String())
 	}
 }
@@ -169,8 +170,7 @@ func TestInitDetectsCurrentProjectDirectory(t *testing.T) {
 	input := strings.Join([]string{
 		"",
 		"",
-		"",
-		"root@119.36.78.123",
+		"deploy@192.0.2.10",
 		"/www/site",
 		"n",
 	}, "\n") + "\n"
@@ -183,7 +183,7 @@ func TestInitDetectsCurrentProjectDirectory(t *testing.T) {
 	if !strings.Contains(output.String(), "Detected current project directory") || strings.Contains(output.String(), "Local directory (path or . for the current directory):") {
 		t.Fatalf("current project was not detected:\n%s", output.String())
 	}
-	if !strings.Contains(output.String(), "root@119.36.78.123:/www/site") {
+	if !strings.Contains(output.String(), "deploy@192.0.2.10:/www/site") {
 		t.Fatalf("split deployment target missing from preview:\n%s", output.String())
 	}
 }
@@ -204,7 +204,7 @@ func TestInitRejectsMissingDirectory(t *testing.T) {
 func TestInitExistingTargetWithNoChangesDoesNotConfirm(t *testing.T) {
 	t.Setenv("DISTSHIP_LANG", "en")
 	directory := t.TempDir()
-	if err := os.WriteFile(filepath.Join(directory, "package.json"), []byte(`{"name":"jd_ipd","scripts":{"build-staging":"vite build"}}`), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(directory, "package.json"), []byte(`{"name":"existing-site","scripts":{"build-staging":"vite build"}}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(t.TempDir(), "projects.toml")
@@ -219,7 +219,7 @@ func TestInitExistingTargetWithNoChangesDoesNotConfirm(t *testing.T) {
 	if err := config.Save(path, cfg); err != nil {
 		t.Fatal(err)
 	}
-	input := strings.Join([]string{"", "", "", "", ""}, "\n") + "\n"
+	input := strings.Join([]string{"", "", "", ""}, "\n") + "\n"
 	var output bytes.Buffer
 	command := newRootCommand(strings.NewReader(input), &output, &output)
 	command.SetArgs([]string{"--config", path, "init", directory})
@@ -229,8 +229,43 @@ func TestInitExistingTargetWithNoChangesDoesNotConfirm(t *testing.T) {
 	if !strings.Contains(output.String(), "No configuration changes detected") || strings.Contains(output.String(), "Update this deployment target?") {
 		t.Fatalf("unexpected no-change flow:\n%s", output.String())
 	}
-	if !strings.Contains(output.String(), "Project ID [site]:") || !strings.Contains(output.String(), "Environment ID [staging]:") {
+	if !strings.Contains(output.String(), "Project: site") || !strings.Contains(output.String(), "Deployment environment [staging]:") || !strings.Contains(output.String(), "Deployment target ID: site:staging") {
 		t.Fatalf("configured target was not reused as the default:\n%s", output.String())
+	}
+}
+
+func TestInitRejectsInvalidDeploymentEnvironmentImmediately(t *testing.T) {
+	t.Setenv("DISTSHIP_LANG", "en")
+	directory := t.TempDir()
+	if err := os.WriteFile(filepath.Join(directory, "package.json"), []byte(`{"name":"site","scripts":{"build":"vite build"}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "projects.toml")
+	var output bytes.Buffer
+	command := newRootCommand(strings.NewReader("Production Site\n"), &output, &output)
+	command.SetArgs([]string{"--config", path, "init", directory})
+	err := command.Execute()
+	if err == nil || !strings.Contains(err.Error(), "deployment environment may only contain") {
+		t.Fatalf("error = %v, want deployment environment validation", err)
+	}
+	if strings.Contains(output.String(), "Build command [") {
+		t.Fatalf("init continued after an invalid environment:\n%s", output.String())
+	}
+}
+
+func TestAdvancedInitRejectsInvalidTargetIDImmediately(t *testing.T) {
+	t.Setenv("DISTSHIP_LANG", "en")
+	directory := t.TempDir()
+	path := filepath.Join(t.TempDir(), "projects.toml")
+	var output bytes.Buffer
+	command := newRootCommand(strings.NewReader("site\n"), &output, &output)
+	command.SetArgs([]string{"--config", path, "init", directory, "--advanced"})
+	err := command.Execute()
+	if err == nil || !strings.Contains(err.Error(), "project:environment format") {
+		t.Fatalf("error = %v, want target ID validation", err)
+	}
+	if strings.Contains(output.String(), "Project name [") {
+		t.Fatalf("init continued after an invalid target ID:\n%s", output.String())
 	}
 }
 
@@ -273,9 +308,9 @@ func TestParseDeployTarget(t *testing.T) {
 		directory string
 		complete  bool
 	}{
-		{"bt_250:/www/wwwgit/ipd-front", "bt_250", "/www/wwwgit/ipd-front", true},
-		{"root@119.36.78.123:/www/site", "root@119.36.78.123", "/www/site", true},
-		{"119.36.78.123", "119.36.78.123", "", false},
+		{"staging-web:/var/www/site", "staging-web", "/var/www/site", true},
+		{"deploy@192.0.2.10:/www/site", "deploy@192.0.2.10", "/www/site", true},
+		{"192.0.2.10", "192.0.2.10", "", false},
 		{"example.com", "example.com", "", false},
 	}
 	for _, test := range tests {

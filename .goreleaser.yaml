@@ -41,6 +41,7 @@ archives:
       - README.zh-CN.md
       - CHANGELOG.md
       - docs/*.md
+      - docs/assets/*.png
       - skills/install-distship/**
 
 checksum:

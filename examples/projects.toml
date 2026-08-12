@@ -10,8 +10,8 @@ build = ["pnpm", "build-test"]
 artifact = "dist"
 
 [projects.ipd.environments.test.target]
-host = "bt_250"
-directory = "/www/wwwgit/ipd-front"
+host = "staging-web"
+directory = "/var/www/ipd"
 
 [projects.ipd.environments.test.git]
 allowed_branches = ["test"]

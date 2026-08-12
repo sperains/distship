@@ -1,47 +1,242 @@
 # DistShip
 
-本地构建，确认变更，安全发布。
+**本地构建，确认变更，安全发布。**
 
-DistShip 是一个在部署前展示 Git 变更、本地构建并通过 SSH 发布静态前端产物的命令行工具。
+[![CI](https://github.com/sperains/distship/actions/workflows/ci.yml/badge.svg)](https://github.com/sperains/distship/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/sperains/distship)](https://github.com/sperains/distship/releases/latest)
+[![License](https://img.shields.io/github/license/sperains/distship)](LICENSE)
 
-> 项目状态：早期开发。配置管理、只读部署预检查、本地构建和测试/预发布环境增量部署已经可用。
+[English](README.md) · [简体中文](README.zh-CN.md)
 
-## 环境要求
+DistShip 是一个本地优先的静态前端部署命令行工具。
 
-- macOS 或 Linux
-- 部署功能需要 Git、SSH 和 rsync
-- 各项目配置指定的构建工具
+它会在发布前展示 Git 变更、检查部署目标并在本机构建；用户确认后才通过 SSH 上传产物。
 
-SSH 别名、密钥、自定义端口、跳板机、服务器指纹验证和常见错误处理参见 [DistShip SSH 配置指南](docs/SSH_CONFIGURATION.zh-CN.md)。
+![DistShip 预检查展示 Git 变更和部署目标状态](docs/assets/distship-preflight.png)
 
-## 安装
+## 为什么使用 DistShip？
 
-每个 GitHub Release 都会提供 macOS、Linux 的 ARM64 与 x86-64 预构建压缩包。从 [GitHub Releases](https://github.com/sperains/distship/releases) 下载当前平台对应的文件和 `checksums.txt`，校验下载的压缩包后，再将 `distship` 放入 `PATH` 中的目录。
+- **明确发布内容。** 部署前展示准确的 Git 版本和最近的非合并提交。
+- **提前发现问题。** 只读检查项目、构建工具、分支策略、SSH 连接和远端目录权限。
+- **构建留在本机。** 执行前端项目自己的构建命令，再通过 SSH 上传静态产物。
+- **保留操作控制。** 先预览计划和目标，再确认部署，并在本地记录成功历史。
+- **复用标准 SSH。** 密钥、端口、跳板机和别名统一交给 `~/.ssh/config` 管理。
+
+## 快速开始
+
+### 1. 安装
+
+#### 使用 Codex
+
+让 Codex 安装仓库配套的 [`install-distship`](skills/install-distship/SKILL.md)
+技能，再通过该技能安装经过校验的最新版本：
+
+```text
+从 https://github.com/sperains/distship/tree/main/skills/install-distship 安装技能，
+然后使用 $install-distship 安装最新稳定版本。
+```
+
+#### 不使用 Codex
+
+从[最新版本](https://github.com/sperains/distship/releases/latest)下载当前平台对应的压缩包和
+`checksums.txt`，再按照[安装指南](docs/INSTALLATION.zh-CN.md)完成校验和安装。
+
+### 2. 配置 SSH
+
+先确认系统 SSH 客户端能够连接部署目标：
 
 ```bash
-# macOS
-shasum -a 256 --ignore-missing --check checksums.txt
-# Linux
-sha256sum --ignore-missing --check checksums.txt
+ssh staging-web
+```
 
-tar -xzf distship_<版本>_<平台>_<架构>.tar.gz
-install -m 0755 distship /usr/local/bin/distship
+推荐使用 SSH 别名，但不是必填项。DistShip 也支持域名、IP 和
+`user@host`。密钥、自定义端口、跳板机、服务器指纹验证和故障排查参见
+[SSH 配置指南](docs/SSH_CONFIGURATION.zh-CN.md)。
+
+### 3. 初始化项目
+
+进入前端项目目录执行，或显式传入项目路径：
+
+```bash
+cd /前端项目路径
+distship init
+
+# 等价的显式写法：
+distship init /前端项目路径
+```
+
+DistShip 会识别受支持的前端项目信息，提供有依据的默认值，保存前展示配置，并在写入后自动校验。使用
+`--advanced` 可以自定义目标 ID、名称、产物目录、允许分支和脏工作区策略。
+
+<!-- markdownlint-disable MD013 MD033 -->
+<details>
+<summary>查看完整初始化流程</summary>
+
+```text
+$ distship init
+DistShip 初始化
+
+当前目录可识别为可部署项目时会自动使用，否则请指定项目目录；使用 --advanced 配置全部字段。
+
+✓ 已识别当前项目目录
+  /Users/example/projects/web_test
+
+项目分析
+
+  本地目录：/Users/example/projects/web_test
+  项目：web_test
+  项目类型：Node.js
+  包管理器：npm
+  Git 分支：未识别
+  构建命令：npm run build
+  产物目录：未识别
+
+部署目标
+
+  项目：web-test
+  部署环境 [test]:
+
+  部署目标 ID：web-test:test
+  该标识会显示在 list 中，并用于 check、deploy 和 remove 命令。
+
+构建命令 [npm run build]:
+产物目录 (例如 dist): dist
+SSH 服务器 (例如 staging-web 或 deploy@example.com): staging-web
+服务器部署目录 (绝对路径): /var/www/web-test
+
+配置预览
+
+  部署目标 ID：web-test:test
+  项目：web_test
+  环境：test
+  本地目录：/Users/example/projects/web_test
+  构建命令：npm run build
+  产物目录：dist
+  部署目标：staging-web:/var/www/web-test
+  允许分支：任意分支（部署时警告）
+  工作区：warn
+  配置文件：/Users/example/.config/distship/projects.toml
+
+只会修改本地配置，不会连接服务器。
+保存这个部署目标？ [N]: y
+
+✓ 已写入配置
+✓ 配置有效
+
+  路径：/Users/example/.config/distship/projects.toml
+  部署目标 ID：web-test:test
+
+下一步：distship check web-test:test
+```
+
+</details>
+<!-- markdownlint-enable MD013 MD033 -->
+
+### 4. 列出、检查并部署
+
+```bash
+distship list
+```
+
+```text
+[1] storefront · test
+    标识：storefront:test
+    本地：/Users/example/projects/storefront
+    远端：staging-web:/var/www/storefront
+    分支：test
+
+[2] operations · staging
+    标识：operations:staging
+    本地：/Users/example/projects/operations
+    远端：staging-web:/var/www/operations
+    分支：main
+
+[3] docs-site · test
+    标识：docs-site:test
+    本地：/Users/example/projects/docs-site
+    远端：staging-web:/var/www/docs-site
+    分支：任意分支（部署时警告）
+```
+
+从列表中复制一个部署目标 ID，继续执行后续命令：
+
+```bash
+distship check storefront:test
+distship deploy storefront:test --dry-run
+distship deploy storefront:test
+```
+
+部署目标 ID 使用 `project:environment` 格式。
+
+## 部署流程
+
+```text
+初始化配置
+    ↓
+只读预检查
+    ↓
+确认目标、Git 变更和构建计划
+    ↓
+用户确认 → 本地构建 → 产物校验 → 增量上传
+    ↓
+在本地记录成功部署
+```
+
+`distship check`
+严格只读：不会构建、创建远端目录、上传文件或写入部署历史。`distship deploy --dry-run`
+只预览本地计划，不执行构建，也不连接服务器。
+
+真实部署时，DistShip 会：
+
+1. 执行相同的预检查。
+2. 展示准确的来源版本和最近的非合并提交。
+3. 在本机构建并校验配置的产物目录。
+4. 仅在必要时创建远端目录。
+5. 使用 `rsync` 增量上传，不删除无关的远端文件。
+6. 将成功部署记录到 XDG 状态目录。
+
+仅在明确需要跳过普通确认时使用 `--yes`，安全检查失败仍会阻断部署。
+
+## 环境要求与适用边界
+
+| 范围     | 当前支持                         |
+| -------- | -------------------------------- |
+| 操作系统 | macOS、Linux                     |
+| 项目     | 能生成完整静态产物目录的前端项目 |
+| 环境     | 测试、预发布                     |
+| 传输     | 系统 SSH 和 `rsync`              |
+| 界面语言 | 英文、简体中文                   |
+
+本机需要具备 Git、SSH、`rsync`
+和项目配置的构建工具；远端 SSH 用户需要拥有目标目录写入权限。
+
+`v0.1`
+**不负责**后端服务、容器、数据库、进程管理、服务器端构建、服务重启或运行时配置。当前采用增量上传，不是原子发布，也不提供自动回滚。
+
+## 常用命令
+
+```bash
+distship init [项目目录] [--advanced]
+distship list
+distship check <project:environment>
+distship deploy <project:environment> [--dry-run] [--yes]
+distship config validate
+distship config remove <project:environment>
 distship version
 ```
 
-没有管理员权限时，应改用已经加入 `PATH` 的用户目录。Homebrew 分发仍在计划中，当前尚未启用。
+使用 `--config <路径>` 指定配置文件；使用 `--lang en` 或 `--lang zh-CN`
+覆盖终端语言自动识别结果。
 
-### Codex 技能
+## 文档
 
-仓库提供配套的 [`install-distship`](skills/install-distship/SKILL.md) 技能，用于安装或升级经过校验的正式版本。可以让 Codex 从 `https://github.com/sperains/distship/tree/main/skills/install-distship` 安装该技能，再使用 `$install-distship` 安装最新稳定版或指定版本。默认安装到 `$HOME/.local/bin`，不会修改 DistShip 配置或部署历史。
-
-### 升级
-
-下载并校验新版本压缩包，然后替换原安装位置中的 `distship` 二进制。配置和本机部署历史保存在独立目录中，不会被二进制升级覆盖。替换完成后执行 `distship version`，确认当前生效版本。
-
-### 卸载
-
-先执行 `command -v distship` 确认安装位置，再删除该路径下的二进制。卸载命令默认保留配置和部署历史；只有确定不再需要这些本机记录时，才单独清理 `${XDG_CONFIG_HOME:-$HOME/.config}/distship` 和 `${XDG_STATE_HOME:-$HOME/.local/state}/distship`。
+- [安装与升级](docs/INSTALLATION.zh-CN.md)
+- [SSH 配置指南](docs/SSH_CONFIGURATION.zh-CN.md)
+- [配置示例](examples/projects.toml)
+- [版本发布流程](docs/RELEASING.md)
+- [贡献指南](CONTRIBUTING.md)
+- [安全策略](SECURITY.md)
+- [变更记录](CHANGELOG.md)
 
 ## 从源码构建
 
@@ -50,85 +245,6 @@ go build ./...
 go test ./...
 ```
 
-项目维护者发布版本时应遵循 [docs/RELEASING.md](docs/RELEASING.md)。
-
-## 首次使用
-
-```bash
-distship init /项目绝对路径
-# 也可以进入可识别的项目目录后执行：
-cd /项目绝对路径
-distship init
-distship list
-distship check project:test
-```
-
-本地项目目录可以通过参数指定、从当前目录识别，也可以在交互中输入。只有识别到可构建项目，或当前目录已存在于配置中时，DistShip 才会自动采用当前目录，并明确展示识别结果；也可以使用 `distship init .` 显式指定当前目录。目录会在其他配置问题开始前完成存在性和类型校验。
-
-随后工具会展示识别到的项目类型、包管理器、Git 分支、构建命令和产物目录。只有具备可靠依据的结果才会成为默认值；无法识别构建命令或产物目录时，仍要求明确输入。
-
-更新已有目标时，默认保留显示名称和 Git 策略，先展示字段级差异，再进行唯一一次确认；没有变化时直接退出，不重写配置。保存后会自动重新读取并校验配置。
-
-所选目录只对应一个已有目标时，DistShip 会复用其项目和环境 ID，不再根据包名生成新的 ID。多个目标共用目录时，依次尝试按当前 Git 分支和 `test` 环境确定唯一默认目标。
-
-需要自定义显示名称、产物路径、允许分支和脏工作区策略时，使用 `distship init /项目路径 --advanced`。
-
-部署目标支持 SSH 别名、域名、IP 和 `user@host`，SSH 别名不是必填项。可以一次输入完整目标（如 `bt_250:/www/site`），也可以先输入 SSH 目标，再按下一条提示输入远端目录。自定义端口和其他连接选项建议统一写入 `~/.ssh/config`，保证后续 SSH 与 rsync 使用一致的连接行为。
-
-## 检查部署目标
-
-```bash
-distship check ipd:test
-```
-
-`check` 会检查本地项目目录、构建工具、Git 分支与工作区策略、SSH 连接和远端目录权限。该命令严格只读，不会执行构建、创建远端目录、上传文件或写入部署历史。项目属于 Git 仓库时，会保留当前版本用于追溯，并展示最近三条非合并提交，帮助判断是否部署。
-
-## 部署目标
-
-```bash
-distship deploy ipd:test
-```
-
-`deploy` 会执行相同的预检查，展示来源版本、目标、构建计划和提交上下文，然后要求确认。确认后在本地构建并校验产物目录，仅在必要时创建远端目录，再使用不带删除参数的 `rsync` 增量上传。部署成功后会在 XDG 状态目录追加本机历史；后续部署将展示相对匹配本机记录的非合并提交范围。
-
-只在本地预览计划，不构建也不访问网络：
-
-```bash
-distship deploy ipd:test --dry-run
-```
-
-可使用 `--yes` 跳过普通确认，但分支拒绝、高风险目标目录、工具缺失、构建失败和权限失败仍会阻断部署。
-
-## 删除部署目标
-
-```bash
-distship config remove ipd:test
-```
-
-直接使用 `distship list` 展示的目标 ID。命令会展示目标摘要并要求确认，只修改本地配置，不会删除本地项目或服务器文件。可以使用 `--yes` 跳过确认。空项目会自动移除；删除最后一个目标时，配置文件会重命名为带时间戳的备份，而不是直接删除。
-
-可以使用 `--config <路径>` 指定配置文件；未指定时按约定顺序查找配置，新配置默认写入 XDG 配置目录。
-
-版本一的完整配置格式参见 [examples/projects.toml](examples/projects.toml)。
-
-## 界面语言
-
-DistShip 根据 `LC_ALL`、`LC_MESSAGES` 和 `LANG` 自动选择终端语言，无法识别时回退到英文。英文和简体中文均内置在二进制中。
-
-```bash
-distship --lang en list
-distship --lang zh-CN list
-DISTSHIP_LANG=zh-CN distship list
-```
-
-语言优先级为 `--lang`、`DISTSHIP_LANG`、系统区域设置。命令、选项和配置字段始终保持英文。
-
-## 适用边界
-
-`v0.1` 只面向测试和预发布环境中的静态前端项目。项目必须能够在本地生成可由 Web 服务器直接托管的完整产物目录；后端服务、容器、数据库、进程管理、服务器端构建、服务重启和运行时配置管理均不在当前范围内。
-
-直接增量上传不是原子发布，也不提供自动回滚。
-
 ## 许可证
 
-MIT
+DistShip 使用 [MIT License](LICENSE) 发布。

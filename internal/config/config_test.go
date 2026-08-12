@@ -131,7 +131,7 @@ func validConfig() *Config {
 						Directory: "/Users/example/ipd",
 						Build:     []string{"pnpm", "build-test"},
 						Artifact:  "dist",
-						Target:    Target{Host: "bt_250", Directory: "/www/wwwgit/ipd-front"},
+						Target:    Target{Host: "staging-web", Directory: "/var/www/ipd"},
 						Git:       GitPolicy{AllowedBranches: []string{"test"}, Dirty: "warn"},
 					},
 				},

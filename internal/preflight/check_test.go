@@ -56,7 +56,7 @@ func TestCheckReturnsGitAndRemoteReport(t *testing.T) {
 		t.Fatalf("recent Git command does not exclude merges: %s", recentCommand)
 	}
 	sshCommand := runner.commands[len(runner.commands)-1]
-	if sshCommand.Name != "ssh" || !strings.Contains(strings.Join(sshCommand.Args, " "), "bt_250") || sshCommand.Stdin != remoteCheckScript {
+	if sshCommand.Name != "ssh" || !strings.Contains(strings.Join(sshCommand.Args, " "), "staging-web") || sshCommand.Stdin != remoteCheckScript {
 		t.Fatalf("ssh command = %#v", sshCommand)
 	}
 }
@@ -109,7 +109,7 @@ func gitRunner(branch, status, remote string) *fakeRunner {
 			{result: process.Result{Stdout: "true\n"}},
 			{result: process.Result{Stdout: branch + "\n"}},
 			{result: process.Result{Stdout: "mergehash\x00merge123\n"}},
-			{result: process.Result{Stdout: "1234567890\x1f12345678\x1ffix: safe deploy\x1fSperains\x1f2026-08-12T10:30:00+08:00\x1e\n"}},
+			{result: process.Result{Stdout: "1234567890\x1f12345678\x1ffix: safe deploy\x1fAlex\x1f2026-08-12T10:30:00+08:00\x1e\n"}},
 			{result: process.Result{Stdout: status}},
 			{result: process.Result{Stdout: remote}},
 		},
@@ -120,7 +120,7 @@ func checkedEnvironment(directory string) config.Environment {
 	return config.Environment{
 		Directory: directory,
 		Build:     []string{"pnpm", "build-test"},
-		Target:    config.Target{Host: "bt_250", Directory: "/www/wwwgit/site"},
+		Target:    config.Target{Host: "staging-web", Directory: "/var/www/site"},
 		Git:       config.GitPolicy{AllowedBranches: []string{"test"}, Dirty: "warn"},
 	}
 }

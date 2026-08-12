@@ -1,47 +1,255 @@
 # DistShip
 
-Build locally. Review changes. Ship safely.
+**Build locally. Review changes. Ship safely.**
 
-DistShip is a local-first CLI that previews Git changes, builds frontend projects, and deploys static artifacts to SSH servers.
+[![CI](https://github.com/sperains/distship/actions/workflows/ci.yml/badge.svg)](https://github.com/sperains/distship/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/sperains/distship)](https://github.com/sperains/distship/releases/latest)
+[![License](https://img.shields.io/github/license/sperains/distship)](LICENSE)
 
-> Project status: early development. Configuration, read-only preflight checks, local builds, and incremental SSH deployments are available for test and staging environments.
+[English](README.md) · [简体中文](README.zh-CN.md)
 
-## Requirements
+DistShip is a local-first CLI for deploying static frontend artifacts to SSH
+servers. It shows the Git changes you are about to ship, checks the target,
+builds on your machine, and uploads only after confirmation.
 
-- macOS or Linux
-- Git, SSH, and rsync for deployment features
-- The build tool required by each configured project
+![DistShip deployment preflight showing Git changes and target readiness](docs/assets/distship-preflight.png)
 
-See [SSH configuration for DistShip](docs/SSH_CONFIGURATION.md) for aliases, keys, custom ports, jump hosts, fingerprint verification, and troubleshooting.
+## Why DistShip?
 
-## Install
+- **Know what will ship.** Review the exact Git revision and recent non-merge
+  commits before deployment.
+- **Catch problems early.** Validate the project, build tool, branch policy, SSH
+  access, and remote permissions without changing anything.
+- **Keep builds local.** Use each frontend project's own build command and
+  upload the resulting static artifacts over SSH.
+- **Stay in control.** Preview the plan, confirm the target, and keep a local
+  record of successful deployments.
+- **Reuse standard SSH.** Keep keys, ports, jump hosts, and aliases in
+  `~/.ssh/config` instead of application configuration.
 
-Each GitHub Release provides prebuilt archives for macOS and Linux on ARM64 and x86-64. Download the archive for your platform and `checksums.txt` from [GitHub Releases](https://github.com/sperains/distship/releases), then verify the downloaded archive before placing `distship` somewhere on your `PATH`.
+## Quick start
+
+### 1. Install
+
+#### With Codex
+
+Ask Codex to install the bundled [`install-distship`](skills/install-distship/SKILL.md)
+skill, then use it to install the latest verified release:
+
+```text
+Install the skill from https://github.com/sperains/distship/tree/main/skills/install-distship,
+then use $install-distship to install the latest stable release.
+```
+
+#### Without Codex
+
+Download the archive for your platform and `checksums.txt` from the
+[latest release](https://github.com/sperains/distship/releases/latest), then
+follow the [installation guide](docs/INSTALLATION.md) to verify and install it.
+
+### 2. Configure SSH
+
+Verify that the deployment target works with your system SSH client:
 
 ```bash
-# macOS
-shasum -a 256 --ignore-missing --check checksums.txt
-# Linux
-sha256sum --ignore-missing --check checksums.txt
+ssh staging-web
+```
 
-tar -xzf distship_<version>_<platform>_<architecture>.tar.gz
-install -m 0755 distship /usr/local/bin/distship
+An SSH alias is recommended but not required. DistShip also accepts a hostname,
+IP address, or `user@host`. See the
+[SSH configuration guide](docs/SSH_CONFIGURATION.md) for keys, custom ports,
+jump hosts, fingerprint verification, and troubleshooting.
+
+### 3. Initialize a project
+
+Run inside a frontend project, or pass its path explicitly:
+
+```bash
+cd /path/to/frontend-project
+distship init
+
+# Equivalent explicit form:
+distship init /path/to/frontend-project
+```
+
+DistShip detects supported frontend project metadata, proposes reliable
+defaults, previews the configuration, and validates it after saving. Use
+`--advanced` to customize the target ID, names, artifact paths, allowed
+branches, and dirty-working-tree policy.
+
+<!-- markdownlint-disable MD013 MD033 -->
+<details>
+<summary>View the complete initialization flow</summary>
+
+```text
+$ distship init
+DistShip initialization
+
+The current directory is used when it looks like a deployable project; otherwise enter a project directory. Use --advanced to configure every field.
+
+✓ Detected current project directory
+  /Users/example/projects/web_test
+
+Project analysis
+
+  Local directory: /Users/example/projects/web_test
+  Project: web_test
+  Project type: Node.js
+  Package manager: npm
+  Git branch: not detected
+  Build command: npm run build
+  Artifact: not detected
+
+Deployment target
+
+  Project: web-test
+  Deployment environment [test]:
+
+  Deployment target ID: web-test:test
+  The ID appears in list and is used by check, deploy, and remove commands.
+
+Build command [npm run build]:
+Artifact directory (for example, dist): dist
+SSH server (for example, staging-web or deploy@example.com): staging-web
+Remote deployment directory (absolute path): /var/www/web-test
+
+Configuration preview
+
+  Deployment target ID: web-test:test
+  Project: web_test
+  Environment: test
+  Local directory: /Users/example/projects/web_test
+  Build command: npm run build
+  Artifact: dist
+  Target: staging-web:/var/www/web-test
+  Allowed branches: any branch (warning shown before deployment)
+  Working tree: warn
+  Configuration: /Users/example/.config/distship/projects.toml
+
+Only the local configuration will change. No server connection will be made.
+Save this deployment target? [N]: y
+
+✓ Configuration written
+✓ Configuration is valid
+
+  Path: /Users/example/.config/distship/projects.toml
+  Deployment target ID: web-test:test
+
+Next step: distship check web-test:test
+```
+
+</details>
+<!-- markdownlint-enable MD013 MD033 -->
+
+### 4. List, check, and deploy
+
+```bash
+distship list
+```
+
+```text
+[1] storefront · test
+    ID: storefront:test
+    Local: /Users/example/projects/storefront
+    Remote: staging-web:/var/www/storefront
+    Branches: test
+
+[2] operations · staging
+    ID: operations:staging
+    Local: /Users/example/projects/operations
+    Remote: staging-web:/var/www/operations
+    Branches: main
+
+[3] docs-site · test
+    ID: docs-site:test
+    Local: /Users/example/projects/docs-site
+    Remote: staging-web:/var/www/docs-site
+    Branches: any branch (warning shown before deployment)
+```
+
+Copy a target ID from the list and use it for the remaining commands:
+
+```bash
+distship check storefront:test
+distship deploy storefront:test --dry-run
+distship deploy storefront:test
+```
+
+Target IDs follow the `project:environment` format.
+
+## Deployment flow
+
+```text
+init configuration
+       ↓
+read-only preflight
+       ↓
+review target + Git changes + build plan
+       ↓
+confirm → local build → artifact validation → rsync upload
+       ↓
+record successful deployment locally
+```
+
+`distship check` is read-only: it does not build, create remote directories,
+upload files, or write deployment history. `distship deploy --dry-run` previews
+the local plan without building or connecting to the server.
+
+During a real deployment, DistShip:
+
+1. Runs the same preflight checks.
+2. Shows the exact source revision and recent non-merge commits.
+3. Builds locally and validates the configured artifact directory.
+4. Creates the remote directory only when needed.
+5. Uploads incrementally with `rsync` without deleting unrelated remote files.
+6. Records the successful deployment under the XDG state directory.
+
+Use `--yes` only when skipping the ordinary confirmation is intentional. Safety
+failures remain blocking.
+
+## Requirements and scope
+
+| Area                | Current support                |
+| ------------------- | ------------------------------ |
+| Operating systems   | macOS and Linux                |
+| Projects            | Static frontend artifacts      |
+| Environments        | Test and staging               |
+| Transport           | System SSH and `rsync`         |
+| Interface languages | English and Simplified Chinese |
+
+Git, SSH, `rsync`, and the configured project build tool must be available
+locally. The remote SSH user must be able to write to the target directory.
+
+Version 0.1 does **not** manage backend services, containers, databases, process
+managers, server-side builds, service restarts, or runtime configuration.
+Uploads are incremental rather than atomic, and automatic rollback is not
+provided.
+
+## Common commands
+
+```bash
+distship init [project-directory]
+distship list
+distship check <project:environment>
+distship deploy <project:environment>
+distship config validate
+distship config remove <project:environment>
 distship version
 ```
 
-Use a user-owned directory on `PATH` instead of `/usr/local/bin` when administrator access is unavailable. Homebrew distribution is planned but is not enabled yet.
+Add `--advanced` to `init`; add `--dry-run` or `--yes` to `deploy`. Use
+`--config <path>` to select a configuration file and `--lang en` or
+`--lang zh-CN` to override terminal language detection.
 
-### Codex skill
+## Documentation
 
-The repository includes an [`install-distship`](skills/install-distship/SKILL.md) skill for installing or upgrading a checksum-verified release. Ask Codex to install the skill from `https://github.com/sperains/distship/tree/main/skills/install-distship`, then use `$install-distship` for the latest stable release or a specific version. It defaults to `$HOME/.local/bin` and does not modify DistShip configuration or deployment history.
-
-### Upgrade
-
-Download and verify the newer archive, then replace the existing `distship` binary in the same location. Configuration and local deployment history are kept separately and are not replaced by a binary upgrade. Run `distship version` after replacement to confirm the active version.
-
-### Uninstall
-
-Run `command -v distship` to locate the installed binary, then remove that exact file. Uninstalling the binary intentionally keeps configuration and deployment history. Remove `${XDG_CONFIG_HOME:-$HOME/.config}/distship` and `${XDG_STATE_HOME:-$HOME/.local/state}/distship` separately only when those local records are no longer needed.
+- [Installation and upgrades](docs/INSTALLATION.md)
+- [SSH configuration](docs/SSH_CONFIGURATION.md)
+- [Configuration example](examples/projects.toml)
+- [Release process](docs/RELEASING.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Changelog](CHANGELOG.md)
 
 ## Build from source
 
@@ -50,87 +258,6 @@ go build ./...
 go test ./...
 ```
 
-Release maintainers should follow [docs/RELEASING.md](docs/RELEASING.md).
-
-## First use
-
-```bash
-distship init /absolute/path/to/project
-# Or run inside a recognized project:
-cd /absolute/path/to/project
-distship init
-distship list
-distship check project:test
-```
-
-The project directory can be passed as an argument, detected from the current directory, or entered interactively. DistShip automatically uses the current directory only when it detects a buildable project or finds that directory in existing configuration, and always reports the decision. Use `distship init .` to select the current directory explicitly. The directory is checked before configuration questions begin.
-
-DistShip then reports the detected project type, package manager, Git branch, build command, and artifact directory. Only reliable values become defaults. If the build command or artifact directory cannot be inferred, they remain required questions.
-
-For an existing target, its display names and Git policies are preserved by default. DistShip shows field-level changes before asking for one final confirmation; when nothing changed, it exits without rewriting the file. Every saved configuration is reloaded and validated automatically.
-
-When the selected directory already belongs to one configured target, DistShip reuses that target's project and environment IDs instead of deriving a new ID from the package name. If several targets share the directory, the current Git branch and then `test` are used to resolve an unambiguous default.
-
-Use `distship init /path/to/project --advanced` to customize display names, artifact paths, allowed branches, and the dirty-working-tree policy.
-
-The deployment target accepts an SSH alias, hostname, IP address, or `user@host`. Enter it together with the remote directory (`bt_250:/www/site`) or enter the SSH target first and the remote directory at the next prompt. An SSH alias is recommended but not required. Configure custom ports and other connection options in `~/.ssh/config`; this keeps future SSH and rsync behavior consistent.
-
-## Check a target
-
-```bash
-distship check ipd:test
-```
-
-`check` validates the local project directory, build tool, Git branch and working-tree policy, SSH connection, and remote directory permissions. It is read-only: it does not build, create remote directories, upload files, or write deployment history. For Git repositories, it shows the exact current revision for traceability and up to three recent non-merge commits for deployment decisions.
-
-## Deploy a target
-
-```bash
-distship deploy ipd:test
-```
-
-`deploy` runs the same preflight checks, shows the source revision, target, build plan, and commit context, then asks for confirmation. After confirmation it builds locally, validates the artifact directory, creates the remote directory only when needed, and uploads with `rsync` without deleting unrelated remote files. Successful deployments are appended to local history under the XDG state directory; later deployments show the non-merge commit range since the matching local record.
-
-Preview the local plan without building or using the network:
-
-```bash
-distship deploy ipd:test --dry-run
-```
-
-Use `--yes` to skip the ordinary confirmation. Branch denials, unsafe target paths, missing tools, failed builds, and permission failures remain blocking errors.
-
-## Remove a target
-
-```bash
-distship config remove ipd:test
-```
-
-Use the target ID shown by `distship list`. The command previews the selected target and asks for confirmation. It changes only the local configuration and never removes project or server files. Use `--yes` to skip confirmation. Empty projects are removed automatically; when the last target is removed, the configuration file is renamed to a timestamped backup instead of being deleted.
-
-Use `--config <path>` to select an explicit configuration file. Otherwise DistShip follows its documented configuration lookup order and writes new configurations to the XDG configuration directory.
-
-See [examples/projects.toml](examples/projects.toml) for the version 1 configuration format.
-
-## Language
-
-DistShip detects the terminal language from `LC_ALL`, `LC_MESSAGES`, and `LANG`, with English as the fallback. English and Simplified Chinese are bundled in the binary.
-
-```bash
-distship --lang en list
-distship --lang zh-CN list
-DISTSHIP_LANG=en distship list
-```
-
-The `--lang` option takes precedence over `DISTSHIP_LANG`, which takes precedence over the system locale. Commands, flags, and configuration keys always remain in English.
-
-## Scope
-
-Version 0.1 targets static frontend projects in test and staging environments. A project must produce a self-contained artifact directory that can be served as static files. Backend services, containers, databases, process managers, server-side builds, service restarts, and runtime configuration management are outside the current scope.
-
-Direct incremental upload is not atomic and does not provide automatic rollback.
-
-See [README.zh-CN.md](README.zh-CN.md) for Chinese documentation.
-
 ## License
 
-MIT
+DistShip is available under the [MIT License](LICENSE).
