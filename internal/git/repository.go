@@ -3,6 +3,7 @@ package git
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,6 +37,20 @@ type Repository struct {
 	Revision     string
 	Recent       []Commit
 	Changes      Changes
+}
+
+type RangeRelation string
+
+const (
+	RangeAvailable RangeRelation = "available"
+	RangeMissing   RangeRelation = "missing"
+	RangeDiverged  RangeRelation = "diverged"
+)
+
+type CommitRange struct {
+	Relation RangeRelation
+	Total    int
+	Commits  []Commit
 }
 
 func Inspect(ctx context.Context, runner process.Runner, directory string) (Repository, error) {
@@ -84,6 +99,58 @@ func Inspect(ctx context.Context, runner process.Runner, directory string) (Repo
 	}
 	repository.Changes = parseStatus(status.Stdout)
 	return repository, nil
+}
+
+func ChangesSince(ctx context.Context, runner process.Runner, directory, base, head string, limit int) (CommitRange, error) {
+	if base == "" || head == "" {
+		return CommitRange{Relation: RangeMissing}, nil
+	}
+	if base == head {
+		return CommitRange{Relation: RangeAvailable}, nil
+	}
+	exists, err := run(ctx, runner, directory, "cat-file", "-e", base+"^{commit}")
+	if err != nil {
+		if ctx.Err() != nil {
+			return CommitRange{}, ctx.Err()
+		}
+		detail := strings.ToLower(strings.TrimSpace(exists.Stderr))
+		if strings.Contains(detail, "not a valid object") || strings.Contains(detail, "bad object") || strings.Contains(detail, "unknown revision") {
+			return CommitRange{Relation: RangeMissing}, nil
+		}
+		return CommitRange{}, commandError("read local deployment revision", exists, err)
+	}
+	ancestor, err := run(ctx, runner, directory, "merge-base", "--is-ancestor", base, head)
+	if err != nil {
+		if ctx.Err() != nil {
+			return CommitRange{}, ctx.Err()
+		}
+		if strings.TrimSpace(ancestor.Stderr) != "" {
+			return CommitRange{}, commandError("compare deployment revision", ancestor, err)
+		}
+		return CommitRange{Relation: RangeDiverged}, nil
+	}
+	rangeExpression := base + ".." + head
+	countResult, err := run(ctx, runner, directory, "rev-list", "--count", "--no-merges", rangeExpression)
+	if err != nil {
+		return CommitRange{}, commandError("count deployment changes", countResult, err)
+	}
+	total, err := strconv.Atoi(strings.TrimSpace(countResult.Stdout))
+	if err != nil {
+		return CommitRange{}, fmt.Errorf("count deployment changes: unexpected git output")
+	}
+	result := CommitRange{Relation: RangeAvailable, Total: total}
+	if total == 0 || limit <= 0 {
+		return result, nil
+	}
+	logResult, err := run(ctx, runner, directory, "log", "--no-merges", fmt.Sprintf("-%d", limit), "--format=%H%x1f%h%x1f%s%x1f%an%x1f%aI%x1e", rangeExpression)
+	if err != nil {
+		return CommitRange{}, commandError("read deployment changes", logResult, err)
+	}
+	result.Commits, err = parseCommits(logResult.Stdout)
+	if err != nil {
+		return CommitRange{}, err
+	}
+	return result, nil
 }
 
 func parseCommits(output string) ([]Commit, error) {

@@ -48,7 +48,7 @@ func TestCheckReturnsGitAndRemoteReport(t *testing.T) {
 	if !report.Repository.IsRepository || len(report.Repository.Recent) != 1 || report.Repository.Recent[0].Subject != "fix: safe deploy" || report.Repository.Changes.Total() != 1 {
 		t.Fatalf("repository = %#v", report.Repository)
 	}
-	if report.RemoteState != RemoteExisting || !contains(report.Warnings, "dirty") {
+	if report.RemoteState != RemoteExisting || !report.HasWarning(WarningDirty) {
 		t.Fatalf("report = %#v", report)
 	}
 	recentCommand := strings.Join(runner.commands[3].Args, " ")

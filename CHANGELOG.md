@@ -6,6 +6,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## Unreleased
 
+- Clarified that version 0.1 supports static frontend artifacts only and excludes backend or runtime service management.
+- Added confirmed local builds, artifact validation, remote directory creation, incremental rsync upload, per-target deployment locks, and local success history.
+- Added a network-free `deploy --dry-run` preview and deployment change ranges based on matching local history.
 - Present deployment readiness first, condense successful checks, and show the exact Git revision with the three most recent non-merge commits.
 - Initial project skeleton.
 - Interactive configuration initialization.

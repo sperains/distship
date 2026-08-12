@@ -16,12 +16,15 @@ import (
 )
 
 type checkRunner struct {
-	responses []process.Result
-	commands  []process.Command
+	responses  []process.Result
+	commands   []process.Command
+	failAt     int
+	failure    error
+	failResult process.Result
 }
 
 func (r *checkRunner) LookPath(name string) (string, error) {
-	if name == "pnpm" || name == "git" || name == "ssh" {
+	if name == "pnpm" || name == "git" || name == "ssh" || name == "rsync" {
 		return "/usr/bin/" + name, nil
 	}
 	return "", errors.New("not found")
@@ -29,6 +32,9 @@ func (r *checkRunner) LookPath(name string) (string, error) {
 
 func (r *checkRunner) Run(_ context.Context, command process.Command) (process.Result, error) {
 	r.commands = append(r.commands, command)
+	if r.failure != nil && len(r.commands)-1 == r.failAt {
+		return r.failResult, r.failure
+	}
 	if len(r.responses) == 0 {
 		return process.Result{}, errors.New("unexpected command")
 	}
@@ -130,7 +136,7 @@ func TestCheckReportElevatesWarnings(t *testing.T) {
 			Changes:      gitinfo.Changes{Modified: 1},
 		},
 		RemoteState: preflight.RemoteExisting,
-		Warnings:    []string{"dirty"},
+		Warnings:    []preflight.Warning{preflight.WarningDirty},
 	}
 
 	ref := config.TargetRef{ProjectID: "site", EnvironmentID: "test"}

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/pelletier/go-toml/v2"
 
@@ -232,7 +233,7 @@ func escapesProject(path string) bool {
 }
 
 func isSafeRemotePath(path string) bool {
-	if !strings.HasPrefix(path, "/") {
+	if !strings.HasPrefix(path, "/") || strings.ContainsFunc(path, unicode.IsControl) {
 		return false
 	}
 	cleaned := filepath.Clean(path)

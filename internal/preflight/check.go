@@ -40,15 +40,41 @@ const (
 	RemoteCreatable RemoteState = "creatable"
 )
 
+type Warning string
+
+const (
+	WarningGitUnavailable Warning = "git_unavailable"
+	WarningNotGit         Warning = "not_git"
+	WarningDirty          Warning = "dirty"
+	WarningDetached       Warning = "detached"
+)
+
 type Report struct {
 	GitAvailable bool
 	Repository   gitinfo.Repository
 	RemoteState  RemoteState
 	RemoteParent string
-	Warnings     []string
+	Warnings     []Warning
+}
+
+func (r Report) HasWarning(expected Warning) bool {
+	for _, warning := range r.Warnings {
+		if warning == expected {
+			return true
+		}
+	}
+	return false
 }
 
 func Check(ctx context.Context, runner process.Runner, environment config.Environment) (Report, error) {
+	report, err := CheckLocal(ctx, runner, environment)
+	if err != nil {
+		return report, err
+	}
+	return CheckRemote(ctx, runner, environment.Target, report)
+}
+
+func CheckLocal(ctx context.Context, runner process.Runner, environment config.Environment) (Report, error) {
 	var report Report
 	if err := checkDirectory(environment.Directory); err != nil {
 		return report, &CheckError{Kind: ErrorLocalDirectory, Detail: err.Error(), Cause: err}
@@ -74,7 +100,7 @@ func Check(ctx context.Context, runner process.Runner, environment config.Enviro
 			branch := repository.Branch
 			if repository.Detached {
 				branch = "HEAD"
-				report.Warnings = append(report.Warnings, "detached")
+				report.Warnings = append(report.Warnings, WarningDetached)
 			}
 			if len(environment.Git.AllowedBranches) > 0 && !contains(environment.Git.AllowedBranches, branch) {
 				return report, &CheckError{Kind: ErrorBranch, Detail: fmt.Sprintf("%s (allowed: %s)", branch, strings.Join(environment.Git.AllowedBranches, ", "))}
@@ -84,20 +110,24 @@ func Check(ctx context.Context, runner process.Runner, environment config.Enviro
 				case "deny":
 					return report, &CheckError{Kind: ErrorDirty, Detail: formatChanges(repository.Changes)}
 				case "warn":
-					report.Warnings = append(report.Warnings, "dirty")
+					report.Warnings = append(report.Warnings, WarningDirty)
 				}
 			}
 		} else {
-			report.Warnings = append(report.Warnings, "not_git")
+			report.Warnings = append(report.Warnings, WarningNotGit)
 		}
 	} else {
-		report.Warnings = append(report.Warnings, "git_unavailable")
+		report.Warnings = append(report.Warnings, WarningGitUnavailable)
 	}
 
+	return report, nil
+}
+
+func CheckRemote(ctx context.Context, runner process.Runner, target config.Target, report Report) (Report, error) {
 	if _, err := runner.LookPath("ssh"); err != nil {
 		return report, &CheckError{Kind: ErrorSSH, Detail: err.Error(), Cause: err}
 	}
-	remote, err := checkRemote(ctx, runner, environment.Target)
+	remote, err := checkRemote(ctx, runner, target)
 	if err != nil {
 		if ctx.Err() != nil {
 			return Report{}, &CheckError{Kind: ErrorSSH, Detail: ctx.Err().Error(), Cause: ctx.Err()}

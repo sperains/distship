@@ -56,6 +56,18 @@ func TestValidateRejectsProjectRootAsArtifact(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsRemotePathWithControlCharacters(t *testing.T) {
+	cfg := validConfig()
+	project := cfg.Projects["ipd"]
+	environment := project.Environments["test"]
+	environment.Target.Directory = "/www/site\nother"
+	project.Environments["test"] = environment
+	cfg.Projects["ipd"] = project
+	if err := cfg.Validate(); err == nil || !strings.Contains(err.Error(), ".target.directory") {
+		t.Fatalf("Validate() error = %v", err)
+	}
+}
+
 func TestSaveLoadAndDefaults(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nested", "projects.toml")
 	cfg := validConfig()

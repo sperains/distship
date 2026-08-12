@@ -76,6 +76,7 @@ func buildRootCommand(in io.Reader, out, errOut io.Writer, initialLanguage strin
 		a.newInitCommand(),
 		a.newListCommand(),
 		a.newCheckCommand(),
+		a.newDeployCommand(),
 		a.newConfigCommand(),
 		a.newVersionCommand(),
 	)

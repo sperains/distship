@@ -2,9 +2,9 @@
 
 Build locally. Review changes. Ship safely.
 
-DistShip is a local-first CLI that previews Git changes, builds web projects, and deploys artifacts to SSH servers.
+DistShip is a local-first CLI that previews Git changes, builds frontend projects, and deploys static artifacts to SSH servers.
 
-> Project status: early development. Configuration management and read-only deployment preflight checks are available. Build and upload are not implemented yet.
+> Project status: early development. Configuration, read-only preflight checks, local builds, and incremental SSH deployments are available for test and staging environments.
 
 ## Requirements
 
@@ -50,6 +50,22 @@ distship check ipd:test
 
 `check` validates the local project directory, build tool, Git branch and working-tree policy, SSH connection, and remote directory permissions. It is read-only: it does not build, create remote directories, upload files, or write deployment history. For Git repositories, it shows the exact current revision for traceability and up to three recent non-merge commits for deployment decisions.
 
+## Deploy a target
+
+```bash
+distship deploy ipd:test
+```
+
+`deploy` runs the same preflight checks, shows the source revision, target, build plan, and commit context, then asks for confirmation. After confirmation it builds locally, validates the artifact directory, creates the remote directory only when needed, and uploads with `rsync` without deleting unrelated remote files. Successful deployments are appended to local history under the XDG state directory; later deployments show the non-merge commit range since the matching local record.
+
+Preview the local plan without building or using the network:
+
+```bash
+distship deploy ipd:test --dry-run
+```
+
+Use `--yes` to skip the ordinary confirmation. Branch denials, unsafe target paths, missing tools, failed builds, and permission failures remain blocking errors.
+
 ## Remove a target
 
 ```bash
@@ -76,7 +92,9 @@ The `--lang` option takes precedence over `DISTSHIP_LANG`, which takes precedenc
 
 ## Scope
 
-Version 0.1 targets test and staging environments. Direct incremental upload is not atomic and does not provide automatic rollback.
+Version 0.1 targets static frontend projects in test and staging environments. A project must produce a self-contained artifact directory that can be served as static files. Backend services, containers, databases, process managers, server-side builds, service restarts, and runtime configuration management are outside the current scope.
+
+Direct incremental upload is not atomic and does not provide automatic rollback.
 
 See [README.zh-CN.md](README.zh-CN.md) for Chinese documentation.
 
