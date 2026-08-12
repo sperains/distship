@@ -21,6 +21,11 @@ brew install --cask sperains/tap/distship
 Homebrew installs the matching macOS or Linux binary and verifies the archive
 checksum declared by the Cask.
 
+The current macOS binaries are checksum-verified but are not yet signed or
+notarized with an Apple Developer ID. As a temporary compatibility measure, the
+Cask removes the quarantine attribute from the installed `distship` binary
+only. It does not change the system-wide Gatekeeper configuration.
+
 ## Install with Codex
 
 Ask Codex to install the skill from this repository:

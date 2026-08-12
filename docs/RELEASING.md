@@ -72,3 +72,8 @@ GoReleaser publishes the Cask to `sperains/homebrew-tap` with the
 repository-specific deploy key stored in the `HOMEBREW_TAP_DEPLOY_KEY` Actions
 secret. The public key must retain write access to the Tap repository.
 Prerelease tags do not update the stable Cask.
+
+Until macOS artifacts are signed and notarized with an Apple Developer ID, the
+Cask removes the quarantine attribute from the installed `distship` binary
+only. Replace this compatibility hook with signing and notarization before
+removing the documented unsigned-build notice.

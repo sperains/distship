@@ -7,6 +7,7 @@ Versioning.
 
 ## Unreleased
 
+- Fixed macOS Homebrew launches for unsigned builds without disabling Gatekeeper globally.
 - Added Homebrew Cask installation and automatic Tap updates for stable releases.
 - Updated GitHub Actions dependencies to current releases and pinned their
   immutable commits.

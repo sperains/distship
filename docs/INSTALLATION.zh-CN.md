@@ -19,6 +19,10 @@ brew install --cask sperains/tap/distship
 Homebrew 会安装与当前 macOS 或 Linux 平台匹配的二进制，并根据 Cask 中记录的
 校验和验证压缩包。
 
+当前 macOS 二进制已经过校验和验证，但尚未使用 Apple Developer ID 签名和公证。
+作为过渡兼容措施，Cask 只会移除已安装 `distship` 二进制的隔离属性，不会修改
+系统级 Gatekeeper 配置。
+
 ## 使用 Codex 安装
 
 让 Codex 从本仓库安装配套技能：

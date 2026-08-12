@@ -74,6 +74,12 @@ homebrew_casks:
     description: Deploy static frontend artifacts to SSH servers with confidence
     license: MIT
     skip_upload: auto
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/distship"]
+          end
 
 release:
   github:
