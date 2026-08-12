@@ -1,0 +1,18 @@
+version = 1
+
+[projects.ipd]
+name = "IPD"
+
+[projects.ipd.environments.test]
+name = "测试环境"
+directory = "/Users/example/projects/ipd"
+build = ["pnpm", "build-test"]
+artifact = "dist"
+
+[projects.ipd.environments.test.target]
+host = "bt_250"
+directory = "/www/wwwgit/ipd-front"
+
+[projects.ipd.environments.test.git]
+allowed_branches = ["test"]
+dirty = "warn"

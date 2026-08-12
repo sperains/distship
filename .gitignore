@@ -1,0 +1,6 @@
+/distship
+/coverage.out
+/.idea/
+/.vscode/
+.DS_Store
+/projects.toml
