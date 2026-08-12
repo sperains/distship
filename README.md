@@ -4,7 +4,7 @@ Build locally. Review changes. Ship safely.
 
 DistShip is a local-first CLI that previews Git changes, builds web projects, and deploys artifacts to SSH servers.
 
-> Project status: early development. The first milestone provides configuration initialization, validation, and project listing. Deployment is not implemented yet.
+> Project status: early development. Configuration management and read-only deployment preflight checks are available. Build and upload are not implemented yet.
 
 ## Requirements
 
@@ -27,6 +27,7 @@ distship init /absolute/path/to/project
 cd /absolute/path/to/project
 distship init
 distship list
+distship check project:test
 ```
 
 The project directory can be passed as an argument, detected from the current directory, or entered interactively. DistShip automatically uses the current directory only when it detects a buildable project or finds that directory in existing configuration, and always reports the decision. Use `distship init .` to select the current directory explicitly. The directory is checked before configuration questions begin.
@@ -40,6 +41,14 @@ When the selected directory already belongs to one configured target, DistShip r
 Use `distship init /path/to/project --advanced` to customize display names, artifact paths, allowed branches, and the dirty-working-tree policy.
 
 The deployment target accepts an SSH alias, hostname, IP address, or `user@host`. Enter it together with the remote directory (`bt_250:/www/site`) or enter the SSH target first and the remote directory at the next prompt. An SSH alias is recommended but not required. Configure custom ports and other connection options in `~/.ssh/config`; this keeps future SSH and rsync behavior consistent.
+
+## Check a target
+
+```bash
+distship check ipd:test
+```
+
+`check` validates the local project directory, build tool, Git branch and working-tree policy, SSH connection, and remote directory permissions. It is read-only: it does not build, create remote directories, upload files, or write deployment history. For Git repositories, it shows the exact current revision for traceability and up to three recent non-merge commits for deployment decisions.
 
 ## Remove a target
 

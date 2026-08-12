@@ -6,6 +6,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## Unreleased
 
+- Present deployment readiness first, condense successful checks, and show the exact Git revision with the three most recent non-merge commits.
 - Initial project skeleton.
 - Interactive configuration initialization.
 - Configuration validation and grouped project listing.
@@ -18,3 +19,4 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Safe local target removal with confirmation, validation, and timestamped backup of the last configuration.
 - Standardized target selection on the copyable `project:environment` ID.
 - Reused configured target IDs when initialization is run again for the same local directory.
+- Added read-only deployment preflight checks for local tools, Git policy, SSH connectivity, and remote directory permissions.
