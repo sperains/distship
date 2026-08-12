@@ -26,6 +26,12 @@ DistShip 是一个本地优先的静态前端部署命令行工具。
 
 ### 1. 安装
 
+#### 使用 Homebrew
+
+```bash
+brew install --cask sperains/tap/distship
+```
+
 #### 使用 Codex
 
 让 Codex 安装仓库配套的 [`install-distship`](skills/install-distship/SKILL.md)

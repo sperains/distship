@@ -1,7 +1,7 @@
 # Installing DistShip
 
 DistShip publishes checksum-verified archives for macOS and Linux. Use the
-Codex skill for a guided installation, or install a release archive manually.
+Homebrew Cask, the Codex skill for a guided installation, or a release archive.
 
 ## Supported platforms
 
@@ -11,6 +11,15 @@ Codex skill for a guided installation, or install a release archive manually.
 | Linux    | ARM64, x86-64        | `distship_*_Linux_*`  |
 
 Windows is not currently supported.
+
+## Install with Homebrew
+
+```bash
+brew install --cask sperains/tap/distship
+```
+
+Homebrew installs the matching macOS or Linux binary and verifies the archive
+checksum declared by the Cask.
 
 ## Install with Codex
 
@@ -67,9 +76,15 @@ export PATH="$HOME/.local/bin:$PATH"
 
 ## Upgrade
 
-Run the Codex skill again, or download and verify the newer release before
-replacing the existing binary. Upgrades do not change DistShip configuration or
-local deployment history.
+If DistShip was installed with Homebrew, upgrade it with:
+
+```bash
+brew upgrade --cask distship
+```
+
+Otherwise, run the Codex skill again or download and verify the newer release
+before replacing the existing binary. Upgrades do not change DistShip
+configuration or local deployment history.
 
 After upgrading, confirm the active version:
 
@@ -78,6 +93,12 @@ distship version
 ```
 
 ## Uninstall
+
+For a Homebrew installation, run:
+
+```bash
+brew uninstall --cask distship
+```
 
 Run `command -v distship` to locate the active binary, then remove that exact
 file. Configuration and deployment history are intentionally preserved.
@@ -88,10 +109,5 @@ Only remove these directories when their local records are no longer needed:
 ${XDG_CONFIG_HOME:-$HOME/.config}/distship
 ${XDG_STATE_HOME:-$HOME/.local/state}/distship
 ```
-
-## Distribution status
-
-Homebrew installation is not available yet. The GitHub Release archives are the
-current supported distribution channel.
 
 For the next step, return to the [quick start](../README.md#quick-start).

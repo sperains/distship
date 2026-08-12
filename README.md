@@ -31,6 +31,12 @@ builds on your machine, and uploads only after confirmation.
 
 ### 1. Install
 
+#### With Homebrew
+
+```bash
+brew install --cask sperains/tap/distship
+```
+
 #### With Codex
 
 Ask Codex to install the bundled [`install-distship`](skills/install-distship/SKILL.md)

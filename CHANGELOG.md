@@ -7,6 +7,7 @@ Versioning.
 
 ## Unreleased
 
+- Added Homebrew Cask installation and automatic Tap updates for stable releases.
 - Updated GitHub Actions dependencies to current releases and pinned their
   immutable commits.
 - Added a companion Codex skill for verified DistShip installation and upgrades.

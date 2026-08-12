@@ -34,6 +34,7 @@ The tag starts the release workflow. It reruns tests and static checks, then pub
 - `distship_<version>_Linux_arm64.tar.gz`
 - `distship_<version>_Linux_x86_64.tar.gz`
 - `checksums.txt`
+- an updated `distship` Cask in `sperains/homebrew-tap`
 
 Do not move or reuse a published tag. If a release is incorrect, fix the source and publish a new patch version.
 
@@ -57,6 +58,17 @@ Do not move or reuse a published tag. If a release is incorrect, fix the source 
 
 4. Confirm that the GitHub Release notes describe the intended changes.
 
-## Homebrew status
+5. Verify the Homebrew release:
 
-Homebrew publishing is intentionally not part of the release workflow yet. Enable it only after the Tap repository exists and its write token has been configured. A missing Tap must not prevent GitHub Release users from receiving the standalone archives.
+   ```bash
+   brew update
+   brew upgrade --cask distship
+   distship version
+   ```
+
+## Homebrew publishing
+
+GoReleaser publishes the Cask to `sperains/homebrew-tap` with the
+repository-specific deploy key stored in the `HOMEBREW_TAP_DEPLOY_KEY` Actions
+secret. The public key must retain write access to the Tap repository.
+Prerelease tags do not update the stable Cask.

@@ -58,6 +58,23 @@ changelog:
     exclude:
       - '^Merge '
 
+homebrew_casks:
+  - name: distship
+    ids:
+      - distship
+    binaries:
+      - distship
+    repository:
+      owner: sperains
+      name: homebrew-tap
+      git:
+        url: ssh://git@github.com/sperains/homebrew-tap.git
+        private_key: "{{ .Env.HOMEBREW_TAP_DEPLOY_KEY }}"
+    homepage: https://github.com/sperains/distship
+    description: Deploy static frontend artifacts to SSH servers with confidence
+    license: MIT
+    skip_upload: auto
+
 release:
   github:
     owner: sperains

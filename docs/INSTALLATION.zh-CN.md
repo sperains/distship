@@ -1,7 +1,7 @@
 # 安装 DistShip
 
-DistShip 为 macOS 和 Linux 提供带校验和的预构建压缩包。可以使用 Codex
-技能引导安装，也可以手动安装正式版本。
+DistShip 为 macOS 和 Linux 提供带校验和的预构建压缩包。可以通过 Homebrew、
+Codex 技能或正式版本压缩包安装。
 
 ## 支持平台
 
@@ -9,6 +9,15 @@ DistShip 为 macOS 和 Linux 提供带校验和的预构建压缩包。可以使
 - Linux：支持 ARM64 和 x86-64，压缩包名称包含 `Linux`。
 
 当前暂不支持 Windows。
+
+## 使用 Homebrew 安装
+
+```bash
+brew install --cask sperains/tap/distship
+```
+
+Homebrew 会安装与当前 macOS 或 Linux 平台匹配的二进制，并根据 Cask 中记录的
+校验和验证压缩包。
 
 ## 使用 Codex 安装
 
@@ -62,8 +71,14 @@ export PATH="$HOME/.local/bin:$PATH"
 
 ## 升级
 
-再次运行 Codex 技能，或下载并校验新版本后替换现有二进制。升级不会修改
-DistShip 配置和本地部署历史。
+通过 Homebrew 安装时，执行：
+
+```bash
+brew upgrade --cask distship
+```
+
+其他安装方式可以再次运行 Codex 技能，或下载并校验新版本后替换现有二进制。
+升级不会修改 DistShip 配置和本地部署历史。
 
 升级后确认当前生效版本：
 
@@ -73,6 +88,12 @@ distship version
 
 ## 卸载
 
+通过 Homebrew 安装时，执行：
+
+```bash
+brew uninstall --cask distship
+```
+
 执行 `command -v distship` 找到当前生效的二进制，再删除该文件。配置和部署历史会默认保留。
 
 只有确定不再需要本地记录时，才清理以下目录：
@@ -81,9 +102,5 @@ distship version
 ${XDG_CONFIG_HOME:-$HOME/.config}/distship
 ${XDG_STATE_HOME:-$HOME/.local/state}/distship
 ```
-
-## 分发状态
-
-当前尚未提供 Homebrew 安装方式，GitHub Release 压缩包是正式支持的分发渠道。
 
 安装完成后，返回[快速开始](../README.zh-CN.md#快速开始)继续配置。
