@@ -12,6 +12,8 @@ DistShip 是一个在部署前展示 Git 变更、本地构建并通过 SSH 发�
 - 部署功能需要 Git、SSH 和 rsync
 - 各项目配置指定的构建工具
 
+SSH 别名、密钥、自定义端口、跳板机、服务器指纹验证和常见错误处理参见 [DistShip SSH 配置指南](docs/SSH_CONFIGURATION.zh-CN.md)。
+
 ## 安装
 
 每个 GitHub Release 都会提供 macOS、Linux 的 ARM64 与 x86-64 预构建压缩包。从 [GitHub Releases](https://github.com/sperains/distship/releases) 下载当前平台对应的文件和 `checksums.txt`，校验下载的压缩包后，再将 `distship` 放入 `PATH` 中的目录。

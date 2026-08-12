@@ -12,6 +12,8 @@ DistShip is a local-first CLI that previews Git changes, builds frontend project
 - Git, SSH, and rsync for deployment features
 - The build tool required by each configured project
 
+See [SSH configuration for DistShip](docs/SSH_CONFIGURATION.md) for aliases, keys, custom ports, jump hosts, fingerprint verification, and troubleshooting.
+
 ## Install
 
 Each GitHub Release provides prebuilt archives for macOS and Linux on ARM64 and x86-64. Download the archive for your platform and `checksums.txt` from [GitHub Releases](https://github.com/sperains/distship/releases), then verify the downloaded archive before placing `distship` somewhere on your `PATH`.
