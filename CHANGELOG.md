@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## Unreleased
 
+## [0.1.0] - 2026-08-12
+
 - Added reproducible GoReleaser builds for macOS and Linux on ARM64 and x86-64.
 - Added a tag-triggered GitHub Release workflow with SHA-256 checksums and embedded version metadata.
 - Added Go build information fallback for locally built and source-installed version output.
