@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## Unreleased
 
+- Added reproducible GoReleaser builds for macOS and Linux on ARM64 and x86-64.
+- Added a tag-triggered GitHub Release workflow with SHA-256 checksums and embedded version metadata.
+- Added Go build information fallback for locally built and source-installed version output.
+- Documented binary installation, upgrades, uninstallation, release verification, and the maintainer release process.
 - Clarified that version 0.1 supports static frontend artifacts only and excludes backend or runtime service management.
 - Added confirmed local builds, artifact validation, remote directory creation, incremental rsync upload, per-target deployment locks, and local success history.
 - Added a network-free `deploy --dry-run` preview and deployment change ranges based on matching local history.

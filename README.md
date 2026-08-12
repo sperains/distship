@@ -12,12 +12,39 @@ DistShip is a local-first CLI that previews Git changes, builds frontend project
 - Git, SSH, and rsync for deployment features
 - The build tool required by each configured project
 
+## Install
+
+Each GitHub Release provides prebuilt archives for macOS and Linux on ARM64 and x86-64. Download the archive for your platform and `checksums.txt` from [GitHub Releases](https://github.com/sperains/distship/releases), then verify the downloaded archive before placing `distship` somewhere on your `PATH`.
+
+```bash
+# macOS
+shasum -a 256 --ignore-missing --check checksums.txt
+# Linux
+sha256sum --ignore-missing --check checksums.txt
+
+tar -xzf distship_<version>_<platform>_<architecture>.tar.gz
+install -m 0755 distship /usr/local/bin/distship
+distship version
+```
+
+Use a user-owned directory on `PATH` instead of `/usr/local/bin` when administrator access is unavailable. Homebrew distribution is planned but is not enabled yet.
+
+### Upgrade
+
+Download and verify the newer archive, then replace the existing `distship` binary in the same location. Configuration and local deployment history are kept separately and are not replaced by a binary upgrade. Run `distship version` after replacement to confirm the active version.
+
+### Uninstall
+
+Run `command -v distship` to locate the installed binary, then remove that exact file. Uninstalling the binary intentionally keeps configuration and deployment history. Remove `${XDG_CONFIG_HOME:-$HOME/.config}/distship` and `${XDG_STATE_HOME:-$HOME/.local/state}/distship` separately only when those local records are no longer needed.
+
 ## Build from source
 
 ```bash
 go build ./...
 go test ./...
 ```
+
+Release maintainers should follow [docs/RELEASING.md](docs/RELEASING.md).
 
 ## First use
 

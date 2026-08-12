@@ -102,7 +102,8 @@ func (a *app) newVersionCommand() *cobra.Command {
 		Short: a.translator.T(i18n.VersionShort),
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			_, err := fmt.Fprintf(a.out, "distship %s\ncommit: %s\nbuilt: %s\n", version, commit, date)
+			metadata := currentBuildMetadata()
+			_, err := fmt.Fprintf(a.out, "distship %s\ncommit: %s\nbuilt: %s\n", metadata.version, metadata.commit, metadata.date)
 			return err
 		},
 	}

@@ -12,12 +12,39 @@ DistShip 是一个在部署前展示 Git 变更、本地构建并通过 SSH 发�
 - 部署功能需要 Git、SSH 和 rsync
 - 各项目配置指定的构建工具
 
+## 安装
+
+每个 GitHub Release 都会提供 macOS、Linux 的 ARM64 与 x86-64 预构建压缩包。从 [GitHub Releases](https://github.com/sperains/distship/releases) 下载当前平台对应的文件和 `checksums.txt`，校验下载的压缩包后，再将 `distship` 放入 `PATH` 中的目录。
+
+```bash
+# macOS
+shasum -a 256 --ignore-missing --check checksums.txt
+# Linux
+sha256sum --ignore-missing --check checksums.txt
+
+tar -xzf distship_<版本>_<平台>_<架构>.tar.gz
+install -m 0755 distship /usr/local/bin/distship
+distship version
+```
+
+没有管理员权限时，应改用已经加入 `PATH` 的用户目录。Homebrew 分发仍在计划中，当前尚未启用。
+
+### 升级
+
+下载并校验新版本压缩包，然后替换原安装位置中的 `distship` 二进制。配置和本机部署历史保存在独立目录中，不会被二进制升级覆盖。替换完成后执行 `distship version`，确认当前生效版本。
+
+### 卸载
+
+先执行 `command -v distship` 确认安装位置，再删除该路径下的二进制。卸载命令默认保留配置和部署历史；只有确定不再需要这些本机记录时，才单独清理 `${XDG_CONFIG_HOME:-$HOME/.config}/distship` 和 `${XDG_STATE_HOME:-$HOME/.local/state}/distship`。
+
 ## 从源码构建
 
 ```bash
 go build ./...
 go test ./...
 ```
+
+项目维护者发布版本时应遵循 [docs/RELEASING.md](docs/RELEASING.md)。
 
 ## 首次使用
 
