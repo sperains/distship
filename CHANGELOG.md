@@ -7,6 +7,8 @@ Versioning.
 
 ## Unreleased
 
+## [0.1.1] - 2026-08-13
+
 - Fixed macOS Homebrew launches for unsigned builds without disabling Gatekeeper globally.
 - Added Homebrew Cask installation and automatic Tap updates for stable releases.
 - Updated GitHub Actions dependencies to current releases and pinned their
