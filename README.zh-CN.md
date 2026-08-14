@@ -170,6 +170,7 @@ distship list
 distship check storefront:test
 distship deploy storefront:test --dry-run
 distship deploy storefront:test
+distship history storefront:test
 ```
 
 部署目标 ID 使用 `project:environment` 格式。
@@ -201,6 +202,10 @@ distship deploy storefront:test
 5. 使用 `rsync` 增量上传，不删除无关的远端文件。
 6. 将成功部署记录到 XDG 状态目录。
 
+使用 `distship history` 查看当前电脑记录的最近成功部署；可以追加目标 ID
+筛选记录，也可以通过 `--limit N` 调整默认的 10 条展示数量。该命令查询的是本机操作历史，
+不代表服务器当前实际版本。
+
 仅在明确需要跳过普通确认时使用 `--yes`，安全检查失败仍会阻断部署。
 
 ## 环境要求与适用边界
@@ -224,6 +229,7 @@ distship deploy storefront:test
 ```bash
 distship init [项目目录] [--advanced]
 distship list
+distship history [<project:environment>] [--limit 10]
 distship check <project:environment>
 distship deploy <project:environment> [--dry-run] [--yes]
 distship config validate

@@ -14,6 +14,11 @@ import (
 
 const Version = 1
 
+const (
+	initialScanBuffer = 64 * 1024
+	maximumRecordSize = 1024 * 1024
+)
+
 type Record struct {
 	Version       int       `json:"version"`
 	DeployedAt    time.Time `json:"deployedAt"`
@@ -28,6 +33,10 @@ type Record struct {
 	DurationMilli int64     `json:"durationMs"`
 }
 
+func (r Record) Duration() time.Duration {
+	return time.Duration(r.DurationMilli) * time.Millisecond
+}
+
 func DefaultPath() (string, error) {
 	if stateHome := os.Getenv("XDG_STATE_HOME"); stateHome != "" {
 		return filepath.Join(stateHome, "distship", "history.jsonl"), nil
@@ -40,40 +49,82 @@ func DefaultPath() (string, error) {
 }
 
 func Last(path string, ref config.TargetRef, target config.Target) (Record, bool, error) {
-	file, err := os.Open(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return Record{}, false, nil
-	}
-	if err != nil {
-		return Record{}, false, fmt.Errorf("open deployment history: %w", err)
-	}
-	defer file.Close()
-
 	var last Record
 	found := false
-	scanner := bufio.NewScanner(file)
-	buffer := make([]byte, 0, 64*1024)
-	scanner.Buffer(buffer, 1024*1024)
-	for scanner.Scan() {
-		var record Record
-		if err := json.Unmarshal(scanner.Bytes(), &record); err != nil {
-			return Record{}, false, fmt.Errorf("parse deployment history: %w", err)
-		}
-		if record.Version != Version {
-			return Record{}, false, fmt.Errorf("unsupported deployment history version: %d", record.Version)
-		}
-		if record.Project == ref.ProjectID && record.Environment == ref.EnvironmentID && record.Host == target.Host && record.Directory == target.Directory {
+	err := scanRecords(path, func(record Record) {
+		if record.matches(ref) && record.Host == target.Host && record.Directory == target.Directory {
 			last = record
 			found = true
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return Record{}, false, fmt.Errorf("read deployment history: %w", err)
+	})
+	if err != nil {
+		return Record{}, false, err
 	}
 	return last, found, nil
 }
 
-func Append(path string, record Record) error {
+func List(path string, ref *config.TargetRef, limit int) ([]Record, error) {
+	if limit <= 0 {
+		return nil, fmt.Errorf("deployment history limit must be greater than zero")
+	}
+
+	var records []Record
+	err := scanRecords(path, func(record Record) {
+		if ref != nil && !record.matches(*ref) {
+			return
+		}
+		if len(records) == limit {
+			copy(records, records[1:])
+			records[len(records)-1] = record
+			return
+		}
+		records = append(records, record)
+	})
+	if err != nil {
+		return nil, err
+	}
+	for left, right := 0, len(records)-1; left < right; left, right = left+1, right-1 {
+		records[left], records[right] = records[right], records[left]
+	}
+	return records, nil
+}
+
+func (r Record) matches(ref config.TargetRef) bool {
+	return r.Project == ref.ProjectID && r.Environment == ref.EnvironmentID
+}
+
+func scanRecords(path string, visit func(Record)) error {
+	file, err := os.Open(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("open deployment history %s: %w", path, err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	buffer := make([]byte, 0, initialScanBuffer)
+	scanner.Buffer(buffer, maximumRecordSize)
+	line := 0
+	for scanner.Scan() {
+		line++
+		var record Record
+		if err := json.Unmarshal(scanner.Bytes(), &record); err != nil {
+			return fmt.Errorf("parse deployment history %s at line %d: %w", path, line, err)
+		}
+		if record.Version != Version {
+			return fmt.Errorf("parse deployment history %s at line %d: unsupported version %d", path, line, record.Version)
+		}
+		visit(record)
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("read deployment history %s at line %d: %w", path, line+1, err)
+	}
+	return nil
+}
+
+func Append(path string, record Record) (resultErr error) {
 	if record.Version == 0 {
 		record.Version = Version
 	}
@@ -88,20 +139,19 @@ func Append(path string, record Record) error {
 	if err != nil {
 		return fmt.Errorf("open deployment history: %w", err)
 	}
+	defer func() {
+		if err := file.Close(); resultErr == nil && err != nil {
+			resultErr = fmt.Errorf("close deployment history: %w", err)
+		}
+	}()
 	if err := file.Chmod(0o600); err != nil {
-		file.Close()
 		return fmt.Errorf("set deployment history permissions: %w", err)
 	}
 	if _, err := file.Write(append(data, '\n')); err != nil {
-		file.Close()
 		return fmt.Errorf("append deployment history: %w", err)
 	}
 	if err := file.Sync(); err != nil {
-		file.Close()
 		return fmt.Errorf("sync deployment history: %w", err)
-	}
-	if err := file.Close(); err != nil {
-		return fmt.Errorf("close deployment history: %w", err)
 	}
 	return nil
 }

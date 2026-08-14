@@ -14,6 +14,7 @@ import (
 	"github.com/sperains/distship/internal/history"
 	"github.com/sperains/distship/internal/i18n"
 	"github.com/sperains/distship/internal/preflight"
+	"github.com/sperains/distship/internal/presentation"
 	"github.com/sperains/distship/internal/transport"
 )
 
@@ -103,7 +104,7 @@ func (a *app) runDeploy(ctx context.Context, targetID string, dryRun, yes bool) 
 	if err != nil {
 		return i18n.NewError(i18n.DeployBuildFailed, err)
 	}
-	fmt.Fprintf(a.out, "\n✓ %s · %s\n", a.translator.T(i18n.BuildCompleted), formatDuration(buildResult.Duration))
+	fmt.Fprintf(a.out, "\n✓ %s · %s\n", a.translator.T(i18n.BuildCompleted), presentation.FormatDuration(buildResult.Duration))
 
 	if report.RemoteState == preflight.RemoteCreatable {
 		if err := transport.EnsureRemote(ctx, a.runner, environment.Target); err != nil {
@@ -136,13 +137,6 @@ func (a *app) runDeploy(ctx context.Context, targetID string, dryRun, yes bool) 
 	}
 	lockReleased = true
 
-	fmt.Fprintf(a.out, "\n✓ %s\n\n  %s\n  %s\n  %s\n", a.translator.T(i18n.DeployCompleted), a.translator.T(i18n.FieldLine, a.translator.T(i18n.FieldDeployTarget), environment.Target.String()), a.translator.T(i18n.FieldLine, a.translator.T(i18n.FieldDuration), formatDuration(duration)), "✓ "+a.translator.T(i18n.DeployHistoryWritten))
+	fmt.Fprintf(a.out, "\n✓ %s\n\n  %s\n  %s\n  %s\n", a.translator.T(i18n.DeployCompleted), a.translator.T(i18n.FieldLine, a.translator.T(i18n.FieldDeployTarget), environment.Target.String()), a.translator.T(i18n.FieldLine, a.translator.T(i18n.FieldDuration), presentation.FormatDuration(duration)), "✓ "+a.translator.T(i18n.DeployHistoryWritten))
 	return nil
-}
-
-func formatDuration(duration time.Duration) string {
-	if duration < time.Second {
-		return fmt.Sprintf("%dms", duration.Milliseconds())
-	}
-	return duration.Round(100 * time.Millisecond).String()
 }

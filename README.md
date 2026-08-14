@@ -179,6 +179,7 @@ Copy a target ID from the list and use it for the remaining commands:
 distship check storefront:test
 distship deploy storefront:test --dry-run
 distship deploy storefront:test
+distship history storefront:test
 ```
 
 Target IDs follow the `project:environment` format.
@@ -210,6 +211,11 @@ During a real deployment, DistShip:
 5. Uploads incrementally with `rsync` without deleting unrelated remote files.
 6. Records the successful deployment under the XDG state directory.
 
+Review the latest successful deployments recorded on this computer with
+`distship history`. Add a target ID to filter the results, or use `--limit N`
+to change the default of 10 records. This is local operational history, not a
+query of the server's current state.
+
 Use `--yes` only when skipping the ordinary confirmation is intentional. Safety
 failures remain blocking.
 
@@ -236,6 +242,7 @@ provided.
 ```bash
 distship init [project-directory]
 distship list
+distship history [<project:environment>] [--limit 10]
 distship check <project:environment>
 distship deploy <project:environment>
 distship config validate

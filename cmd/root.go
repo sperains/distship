@@ -75,6 +75,7 @@ func buildRootCommand(in io.Reader, out, errOut io.Writer, initialLanguage strin
 	root.AddCommand(
 		a.newInitCommand(),
 		a.newListCommand(),
+		a.newHistoryCommand(),
 		a.newCheckCommand(),
 		a.newDeployCommand(),
 		a.newConfigCommand(),
@@ -94,6 +95,19 @@ func (a *app) loadConfig() (*config.Config, string, error) {
 		return nil, "", err
 	}
 	return cfg, path, nil
+}
+
+func (a *app) colorEnabled() bool {
+	return !a.noColor && os.Getenv("NO_COLOR") == "" && isTerminal(a.out)
+}
+
+func isTerminal(output any) bool {
+	file, ok := output.(*os.File)
+	if !ok {
+		return false
+	}
+	info, err := file.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }
 
 func (a *app) newVersionCommand() *cobra.Command {

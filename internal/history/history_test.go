@@ -3,6 +3,7 @@ package history
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -50,5 +51,55 @@ func TestLastRejectsMalformedHistory(t *testing.T) {
 	_, _, err := Last(path, config.TargetRef{}, config.Target{})
 	if err == nil {
 		t.Fatal("Last() error = nil")
+	}
+	if !strings.Contains(err.Error(), path) || !strings.Contains(err.Error(), "line 1") {
+		t.Fatalf("Last() error = %v, want path and line", err)
+	}
+}
+
+func TestListReportsUnsupportedVersionLocation(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "history.jsonl")
+	if err := os.WriteFile(path, []byte("{\"version\":2}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := List(path, nil, 10)
+	if err == nil || !strings.Contains(err.Error(), path) || !strings.Contains(err.Error(), "line 1") || !strings.Contains(err.Error(), "version 2") {
+		t.Fatalf("List() error = %v", err)
+	}
+}
+
+func TestListFiltersLimitsAndReturnsLatestFirst(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "history.jsonl")
+	records := []Record{
+		{Project: "site", Environment: "test", Commit: "first"},
+		{Project: "other", Environment: "test", Commit: "other"},
+		{Project: "site", Environment: "test", Commit: "second"},
+		{Project: "site", Environment: "test", Commit: "latest"},
+	}
+	for _, record := range records {
+		if err := Append(path, record); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ref := config.TargetRef{ProjectID: "site", EnvironmentID: "test"}
+	listed, err := List(path, &ref, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(listed) != 2 || listed[0].Commit != "latest" || listed[1].Commit != "second" {
+		t.Fatalf("List() = %#v", listed)
+	}
+}
+
+func TestListAllowsMissingHistory(t *testing.T) {
+	records, err := List(filepath.Join(t.TempDir(), "missing.jsonl"), nil, 10)
+	if err != nil || len(records) != 0 {
+		t.Fatalf("records = %#v, error = %v", records, err)
+	}
+}
+
+func TestListRejectsInvalidLimit(t *testing.T) {
+	if _, err := List(filepath.Join(t.TempDir(), "history.jsonl"), nil, 0); err == nil {
+		t.Fatal("List() error = nil")
 	}
 }

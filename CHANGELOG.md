@@ -7,6 +7,9 @@ Versioning.
 
 ## Unreleased
 
+- Added a local deployment history command with target filtering, configurable
+  result limits, localized output, and actionable malformed-record errors.
+
 ## [0.1.1] - 2026-08-13
 
 - Fixed macOS Homebrew launches for unsigned builds without disabling Gatekeeper globally.
